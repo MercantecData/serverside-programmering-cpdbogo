@@ -15,8 +15,15 @@ var server = http.createServer(function(req,res){
             console.log(err.fatal);
             res.write("Unable to connect to mysql")
         }
-        con.query("SELECT * FROM employees", function(err,data){
-            res.write(JSON.stringify(data))
+        var values = [
+            ['5','6','6'],
+            ['4','7','9'],
+            ['7','4','6']
+        ];
+        con.query("INSERT INTO stocks (store,product,quantity) VALUES ?",[values], function(err,result){
+            if (err) throw err;
+            console.log(result)
+            res.write(JSON.stringify(result))
             res.end()
             
         })
