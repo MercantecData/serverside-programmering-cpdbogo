@@ -8,10 +8,17 @@ var con = mysql.createConnection({
 });
 
 var server = http.createServer(function(req,res){  
-    con.connect(function (err) { 
+    con.connect(function (err) {
+        if (err) {
+            console.error("Error connecting to mysql DB");
+            console.log(err.code);
+            console.log(err.fatal);
+            res.write("Unable to connect to mysql")
+        }
         con.query("SELECT * FROM employees", function(err,data){
             res.write(JSON.stringify(data))
             res.end()
+            
         })
      })
 })
