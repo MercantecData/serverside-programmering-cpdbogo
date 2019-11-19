@@ -4,11 +4,11 @@ var path = require('path')
 
 http.createServer(function(req,res){
     var url = req.url
-    var filepath = path.join(__dirname, url)
+    var filepath = path.join(__dirname,'data', url)
     var ext = String(path.extname(filepath)).toLowerCase();
 
     if (url.endsWith('/')){
-        filepath = path.join(__dirname,'/index.html')
+        filepath = path.join(__dirname,'data/index.html')
     }
     
     console.log('incoming request', url)
@@ -39,7 +39,7 @@ http.createServer(function(req,res){
         '.xml': 'text/xml',
         '.zip': 'application/zip'
       }
-    var contentheader = extensions[ext] || 'application/octet-stream'
+    var contentheader = extensions[ext] || 'text/html'
 
     fs.readFile(filepath, function(error, data) {
         if (error) {
