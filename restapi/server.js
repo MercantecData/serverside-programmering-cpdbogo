@@ -63,7 +63,7 @@ http.createServer(function(req,res){
             })
         }
         else{
-            res.writeHead(400)
+            res.writeHead(401)
             res.end('Invalid API key')
         }
     }
