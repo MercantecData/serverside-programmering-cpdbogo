@@ -3,15 +3,12 @@ var fs = require('fs')
 var path = require('path')
 var textBody = require('body')
 var crypto = require('crypto')
+var sessions = new Array()
 
-http.createServer(function(req,res){
-    var url = req.url
-    var filepath = path.join(__dirname,'data', url)
-    var ext = String(path.extname(filepath)).toLowerCase();
-    var sessions = new Array()
-    var allowed = false
 
+function authcheck(req,res,redir){
     if (req.headers.cookie){
+        console.log("cookies present")
         var rawcookies = req.headers.cookie.replace(' ','').split(';')
         cookies = new Array()
         for (let index = 0; index < rawcookies.length; index++) {
@@ -19,18 +16,21 @@ http.createServer(function(req,res){
             cookies[tempcookie[0]] = tempcookie[1]
         }
         if (cookies['SESSID']){
-            if (sessions.includes(cookies['SESSID'])){
-                allowed = true
-            }
+            console.log("Session allowed")
+            return true
+            // res.writeHead(300,  {Location: redir})
+            // res.end()
         }
-    }
-    if (!allowed){
-        res.writeHead(300,  {Location: "/login.html"})
-        res.end()
+    }else{
+            console.log("Session denied, redir to login")
+            res.writeHead(300,  {Location: "/login.html"})
+            res.end()
     }
 
-    if (req.method == "POST") {
-        var usersraw = fs.readFileSync('./data/users.json')
+}
+
+function posthandler(req,res){
+    var usersraw = fs.readFileSync('./data/users.json')
         var users = new Object(JSON.parse(usersraw))
         textBody(req, res, function (err, body) {
             if (err) {
@@ -79,62 +79,72 @@ http.createServer(function(req,res){
 
 
         })
+}
+
+http.createServer(function(req,res){
+    console.log(req.url)
+    var url = req.url
+    var filepath = path.join(__dirname,'data', url)
+    var ext = String(path.extname(filepath)).toLowerCase();
+
+    if (req.url != "/login.html" && req.url != "/register.html"){
+        authcheck(req,res,req.url)
     }
+    
+    if (req.method == "POST") {
+        posthandler(req,res)
+    }
+    
+    if (url == '/'){
+         filepath = path.join(__dirname,'data/index.html')
+    }
+    
+    console.log('incoming request', url)
+    // console.log(req.method)
+    
+    //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
+    var extensions = {
+        '.aac': 'audio/aac',
+        '.abw': 'application/x-abiword',
+        '.arc': 'application/x-freearc',
+        '.avi': 'video/x-msvideo',
+        '.azw': 'application/vnd',
+        '.bin': 'application/octet-stream',
+        '.bmp': 'image/bmp',
+        '.bz':  'application/x-bzip',
+        '.bz2': 'application/x-bzip2',
+        '.csh': 'application/x-csh',
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.jpg': 'image/jpeg',
+        '.php': 'application/php',
+        '.png': 'image/png',
+        '.gz': 'application/gzip',
+        '.rar': 'application/x-rar-compressed',
+        '.txt': 'text/plain',
+        '.wav': 'audio/wav',
+        '.webm': 'video/webm',
+        '.xml': 'text/xml',
+        '.zip': 'application/zip'
+    }
+    var contentheader = extensions[ext] || 'text/html'
 
-
-
-
-
-        if (url.endsWith('/')){
-            filepath = path.join(__dirname,'data/index.html')
-        }
-        
-        console.log('incoming request', url)
-        console.log(req.method)
-        
-        //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
-        var extensions = {
-            '.aac': 'audio/aac',
-            '.abw': 'application/x-abiword',
-            '.arc': 'application/x-freearc',
-            '.avi': 'video/x-msvideo',
-            '.azw': 'application/vnd',
-            '.bin': 'application/octet-stream',
-            '.bmp': 'image/bmp',
-            '.bz':  'application/x-bzip',
-            '.bz2': 'application/x-bzip2',
-            '.csh': 'application/x-csh',
-            '.html': 'text/html',
-            '.js': 'text/javascript',
-            '.css': 'text/css',
-            '.jpg': 'image/jpeg',
-            '.php': 'application/php',
-            '.png': 'image/png',
-            '.gz': 'application/gzip',
-            '.rar': 'application/x-rar-compressed',
-            '.txt': 'text/plain',
-            '.wav': 'audio/wav',
-            '.webm': 'video/webm',
-            '.xml': 'text/xml',
-            '.zip': 'application/zip'
-        }
-        var contentheader = extensions[ext] || 'text/html'
-
-        fs.readFile(filepath, function(error, data) {
-            if (error) {
-                if (error.code == 'ENOENT'){
-                    res.writeHead(404)
-                    res.end("404: File not found")
-                } 
-                else {
-                    res.writeHead(500)
-                    res.end("5xx, server done goofed")
-                }
-            }
+    fs.readFile(filepath, function(error, data) {
+        if (error) {
+            if (error.code == 'ENOENT'){
+                res.writeHead(404)
+                res.end("404: File not found")
+            } 
             else {
-                res.writeHead(200, {'Content-Type': contentheader})
-                res.end(data)
+                res.writeHead(500)
+                res.end("5xx, server done goofed")
             }
-        })
+        }
+        else {
+            res.writeHead(200, {'Content-Type': contentheader})
+            res.end(data)
+        }
+    })
 }).listen(80)
 
